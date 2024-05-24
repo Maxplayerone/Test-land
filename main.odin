@@ -7,7 +7,7 @@ import "core:math"
 import "core:strings"
 import "core:sys/windows"
 import "core:mem"
-import "core:unicode/utf8"
+import "core:unicode"
 
 Width :: 960
 Height :: 720
@@ -21,20 +21,18 @@ Height :: 720
 divide_text :: proc(text: string, character_len: int, rect_width: int) -> []string{
     texts_buf := make([dynamic]string, 0, 5, context.temp_allocator)
     temp_string: string
+    cur_row: string
     line_len := 0
     for c in text{
-        if (line_len + character_len) < rect_width{
+        if unicode.is_space(c){
+            append(&texts_buf, temp_string)
+            temp_string = ""
+        }
+        else{
             b := strings.builder_make(context.temp_allocator)
             strings.write_string(&b, temp_string)
             strings.write_rune(&b, c)
             temp_string = strings.to_string(b)
-
-            line_len += character_len
-        }
-        else{
-            append(&texts_buf, temp_string)
-            temp_string = ""
-            line_len = 0
         }
     }
     append(&texts_buf, temp_string)
