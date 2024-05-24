@@ -18,6 +18,7 @@ Height :: 720
 //2.2.1. if adding the string to the current row would not result in overflowing the width add it to cur_row
 //2.2.2. if adding the string to the current row would result in overflow add the cur_row to texts_buf and reset it
 
+/*
 divide_text :: proc(text: string, character_len: int, rect_width: int) -> []string{
     texts_buf := make([dynamic]string, 0, 5, context.temp_allocator)
     temp_string: string
@@ -38,6 +39,27 @@ divide_text :: proc(text: string, character_len: int, rect_width: int) -> []stri
     append(&texts_buf, temp_string)
     return texts_buf[:] 
 }
+*/
+
+/*
+divide_text :: proc(text: string, character_len: int, rect_width: int) -> []string{
+    texts_buf := make([dynamic]string, 0, 5)
+    line_len, last: int
+    for _, p in text {
+        if (line_len + character_len) < rect_width {
+            line_len += character_len
+        } else {
+            append(&texts_buf, text[last:p])
+            last = p
+            line_len = 0
+        }
+    }
+    append(&texts_buf, text[last:])
+    return texts_buf[:]
+}
+*/
+
+
 
 main :: proc(){
     rl.InitWindow(Width, Height, "test")
