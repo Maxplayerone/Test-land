@@ -1,65 +1,62 @@
 package main
 
-import rl "vendor:raylib"
-
 import "core:fmt"
-import "core:math"
 import "core:strings"
-import "core:sys/windows"
+import "core:unicode/utf8"
 import "core:mem"
-import "core:unicode"
+import "core:sys/windows"
+
+import rl "vendor:raylib"
 
 Width :: 960
 Height :: 720
 
-//1. loop over each character in text
-//2.1. if there is no whitespace add it to temp_string
-//2.2. if there is whitespace
-//2.2.1. if adding the string to the current row would not result in overflowing the width add it to cur_row
-//2.2.2. if adding the string to the current row would result in overflow add the cur_row to texts_buf and reset it
+divide_by_space :: proc(text: string) -> []string{
+    words_buf := make([dynamic]string, 0, 5)
+    last: int
+    for c, i in text{
+        if c == ' '{
+            append(&words_buf, text[last: i])
+            last = i
+        }
+    }
+    append(&words_buf, text[last:])
+    return words_buf[:]
+}
 
-/*
-divide_text :: proc(text: string, character_len: int, rect_width: int) -> []string{
-    texts_buf := make([dynamic]string, 0, 5, context.temp_allocator)
-    temp_string: string
-    cur_row: string
-    line_len := 0
-    for c in text{
-        if unicode.is_space(c){
-            append(&texts_buf, temp_string)
-            temp_string = ""
+//returns rows of text that fit into rect's width
+fit_text_on_rect :: proc(text: string, character_len: int, rect_width: int) -> []string{
+    words := divide_by_space(text) 
+    rows_buf := make([dynamic]string, 0, 5)
+
+    row_len, last: int
+    for word, i in words{
+        if row_len + unicode_len(word) * character_len < rect_width{
+            row_len += unicode_len(word) * character_len
+            fmt.println(row_len, rect_width, i, "no add", word)
         }
         else{
-            b := strings.builder_make(context.temp_allocator)
-            strings.write_string(&b, temp_string)
-            strings.write_rune(&b, c)
-            temp_string = strings.to_string(b)
+            fmt.println(row_len + unicode_len(word) * character_len, rect_width, i, "add", word)
+            append(&rows_buf, strings.concatenate(words[last:i], context.temp_allocator))
+            last = i
+            row_len = unicode_len(word) * character_len
         }
     }
-    append(&texts_buf, temp_string)
-    return texts_buf[:] 
-}
-*/
+    append(&rows_buf, strings.concatenate(words[last:], context.temp_allocator))
 
-/*
-divide_text :: proc(text: string, character_len: int, rect_width: int) -> []string{
-    texts_buf := make([dynamic]string, 0, 5)
-    line_len, last: int
-    for _, p in text {
-        if (line_len + character_len) < rect_width {
-            line_len += character_len
-        } else {
-            append(&texts_buf, text[last:p])
-            last = p
-            line_len = 0
+    delete(words)
+    return rows_buf[:] 
+}
+
+unicode_len :: proc(text: string) -> int{
+    len := len(text)
+    for c in text{
+        if c > 127{
+            len -= 1
         }
     }
-    append(&texts_buf, text[last:])
-    return texts_buf[:]
+    return len
 }
-*/
-
-
 
 main :: proc(){
     rl.InitWindow(Width, Height, "test")
@@ -71,15 +68,14 @@ main :: proc(){
 
     windows.SetConsoleOutputCP(windows.CP_UTF8)
 
-    text := "This is a random string of letters"
+    //text := "This is a random string of letters. I'm still testing if this works fully- if it does than it's great"
+    text := "Zobaczmy czy zadziała to też z polskimi literami. Mam nadzieję że tak"
     character_len: f32 = 15.0 
 
     font := rl.LoadFontEx("roboto/Roboto-Black.ttf", 32, nil, 1024)
     width: f32 = 300.0
-    texts_buf := divide_text(text, int(character_len), int(width))
-    for t in texts_buf{
-        fmt.println(t)
-    }
+    //texts_buf := divide_by_space(text)
+    texts_buf := fit_text_on_rect(text, int(character_len), int(width))
 
     for !rl.WindowShouldClose(){
         rl.BeginDrawing()
@@ -94,6 +90,8 @@ main :: proc(){
         rl.ClearBackground(rl.BLACK)
         //free_all(context.temp_allocator)
     }
+    delete(texts_buf)
+    fmt.println("closed the window")
     rl.CloseWindow()
 
     for key, value in tracking_allocator.allocation_map{
