@@ -1,97 +1,94 @@
 package main
 
 import "core:fmt"
-import "core:strings"
-import "core:unicode/utf8"
 import "core:mem"
-import "core:sys/windows"
 
 import rl "vendor:raylib"
 
 Width :: 960
 Height :: 720
 
-divide_by_space :: proc(text: string) -> []string{
-    words_buf := make([dynamic]string, 0, 5)
-    last: int
-    for c, i in text{
-        if c == ' '{
-            append(&words_buf, text[last: i])
-            last = i
-        }
-    }
-    append(&words_buf, text[last:])
-    return words_buf[:]
+get_rect :: proc(pos: rl.Vector2, size: f32,) -> rl.Rectangle{
+    return rl.Rectangle{pos.x, pos.y, size, size}
 }
 
-//returns rows of text that fit into rect's width
-fit_text_on_rect :: proc(text: string, character_len: int, rect_width: int) -> []string{
-    words := divide_by_space(text) 
-    rows_buf := make([dynamic]string, 0, 5)
-
-    row_len, last: int
-    for word, i in words{
-        if row_len + unicode_len(word) * character_len < rect_width{
-            row_len += unicode_len(word) * character_len
-            fmt.println(row_len, rect_width, i, "no add", word)
-        }
-        else{
-            fmt.println(row_len + unicode_len(word) * character_len, rect_width, i, "add", word)
-            append(&rows_buf, strings.concatenate(words[last:i], context.temp_allocator))
-            last = i
-            row_len = unicode_len(word) * character_len
-        }
-    }
-    append(&rows_buf, strings.concatenate(words[last:], context.temp_allocator))
-
-    delete(words)
-    return rows_buf[:] 
+player_render :: proc(p: Player){
+    rl.DrawRectangleRec(get_rect(p.pos, p.size), p.color)
 }
 
-unicode_len :: proc(text: string) -> int{
-    len := len(text)
-    for c in text{
-        if c > 127{
-            len -= 1
-        }
-    }
-    return len
+Player :: struct{
+    color: rl.Color,
+    size: f32,
+
+    pos: rl.Vector2,
+    speed: rl.Vector2,
+    start_vert_speed: f32,
+    g: f32,
+
+    hit_floor: bool,
 }
 
 main :: proc(){
-    rl.InitWindow(Width, Height, "test")
-    rl.SetTargetFPS(60)
-
     tracking_allocator: mem.Tracking_Allocator
     mem.tracking_allocator_init(&tracking_allocator, context.allocator)
     context.allocator = mem.tracking_allocator(&tracking_allocator)
 
-    windows.SetConsoleOutputCP(windows.CP_UTF8)
+    rl.InitWindow(Width, Height, "game")
+    rl.SetWindowState({.WINDOW_RESIZABLE})
+    rl.SetTargetFPS(60)
 
-    //text := "This is a random string of letters. I'm still testing if this works fully- if it does than it's great"
-    text := "Zobaczmy czy zadziała to też z polskimi literami. Mam nadzieję że tak"
-    character_len: f32 = 15.0 
+    player := Player{}
+    player.size = 40.0
+    player.pos = rl.Vector2{Width / 2 - player.size / 2, Height / 2 - player.size / 2 + 100.0}
+    player.color = rl.Color{125, 255, 207, 255}
+    player.speed.x = 400.0
 
-    font := rl.LoadFontEx("roboto/Roboto-Black.ttf", 32, nil, 1024)
-    width: f32 = 300.0
-    //texts_buf := divide_by_space(text)
-    texts_buf := fit_text_on_rect(text, int(character_len), int(width))
+    /*
+    max_dist := rl.Vector2{100.0, 40.0}
+    player.start_vert_speed = 2 * max_dist.y * player.speed.x / max_dist.x
+    player.speed.y = player.start_vert_speed
+    player.g = 2 * max_dist.y * player.speed.x * player.speed.x / (max_dist.x * max_dist.x)
+    */
+
+    jump_height:f32 = 200.0
+    jump_time: f32 = 1.0
+    starting_y := player.pos.y
+    on_floor := true
+
+    g := - 2 * jump_height / (jump_time * jump_time)
+    v := 2 * jump_height / jump_time
+
+    rect := get_rect(player.pos, player.size)
 
     for !rl.WindowShouldClose(){
-        rl.BeginDrawing()
-        defer rl.EndDrawing()
 
-        rl.DrawRectangleRec(rl.Rectangle{200.0, 100, width, 450.0}, rl.WHITE)
-        for t, i in texts_buf{
-            rl.DrawTextEx(font, strings.clone_to_cstring(t, context.temp_allocator), {200.0, 100.0 + (character_len * 2.0 * f32(i))}, character_len * 2.0, 2.0, rl.BLUE)
-            //fmt.println(t)
+        //player_update(&player)
+        fmt.println(player.pos.y, v, g)
+        dt := rl.GetFrameTime()
+        if rl.IsKeyPressed(.SPACE){
+            on_floor = false
+            v = 2 * jump_height / jump_time
         }
 
+        if !on_floor{
+            player.pos.y -= 0.5 * g * dt * dt + v * dt
+            v += g * dt
+        }
+
+        if player.pos.y > starting_y{
+            player.pos.y = starting_y
+            on_floor = true
+        }
+
+        rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
-        //free_all(context.temp_allocator)
+
+        player_render(player)
+        rl.DrawRectangleRec({rect.x - 150.0, rect.y + rect.height - jump_height, 50.0, jump_height}, rl.WHITE)
+
+        rl.EndDrawing()
     }
-    delete(texts_buf)
-    fmt.println("closed the window")
+
     rl.CloseWindow()
 
     for key, value in tracking_allocator.allocation_map{
