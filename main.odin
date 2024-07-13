@@ -8,26 +8,6 @@ import rl "vendor:raylib"
 Width :: 960
 Height :: 720
 
-get_rect :: proc(pos: rl.Vector2, size: f32,) -> rl.Rectangle{
-    return rl.Rectangle{pos.x, pos.y, size, size}
-}
-
-player_render :: proc(p: Player){
-    rl.DrawRectangleRec(get_rect(p.pos, p.size), p.color)
-}
-
-Player :: struct{
-    color: rl.Color,
-    size: f32,
-
-    pos: rl.Vector2,
-    speed: rl.Vector2,
-    start_vert_speed: f32,
-    g: f32,
-
-    hit_floor: bool,
-}
-
 main :: proc(){
     tracking_allocator: mem.Tracking_Allocator
     mem.tracking_allocator_init(&tracking_allocator, context.allocator)
@@ -39,55 +19,43 @@ main :: proc(){
 
     player := Player{}
     player.size = 40.0
-    player.pos = rl.Vector2{Width / 2 - player.size / 2, Height / 2 - player.size / 2 + 100.0}
+    //player.pos = rl.Vector2{Width / 2 - player.size / 2, Height / 2 - player.size / 2 + 100.0}
+    player.pos = rl.Vector2{250.0, 200.0}
     player.color = rl.Color{125, 255, 207, 255}
     player.speed.x = 400.0
 
-    /*
-    max_dist := rl.Vector2{100.0, 40.0}
-    player.start_vert_speed = 2 * max_dist.y * player.speed.x / max_dist.x
-    player.speed.y = player.start_vert_speed
-    player.g = 2 * max_dist.y * player.speed.x * player.speed.x / (max_dist.x * max_dist.x)
-    */
-
     jump_height:f32 = 200.0
-    jump_time: f32 = 1.0
-    starting_y := player.pos.y
-    on_floor := true
+    jump_dist: f32 = 150.0
 
-    g := - 2 * jump_height / (jump_time * jump_time)
-    v := 2 * jump_height / jump_time
+    player.start_vert_speed = 2 * jump_height * player.speed.x / jump_dist
+    player.g = - 2 * jump_height * (player.speed.x * player.speed.x) / (jump_dist * jump_dist)
+    player.gravity_jumping = player.g
+    player.gravity_landing = 2 * player.g
 
     rect := get_rect(player.pos, player.size)
 
+    blocks: [dynamic]rl.Rectangle
+    append(&blocks, rl.Rectangle{0.0, Height - 100.0 + player.size, Width, 100.0})
+    append(&blocks, rl.Rectangle{200.0, 400.0, 100.0, 300.0})
+    append(&blocks, rl.Rectangle{700.0, 300.0, 150.0, 50.0})
+
     for !rl.WindowShouldClose(){
 
-        //player_update(&player)
-        fmt.println(player.pos.y, v, g)
-        dt := rl.GetFrameTime()
-        if rl.IsKeyPressed(.SPACE){
-            on_floor = false
-            v = 2 * jump_height / jump_time
-        }
-
-        if !on_floor{
-            player.pos.y -= 0.5 * g * dt * dt + v * dt
-            v += g * dt
-        }
-
-        if player.pos.y > starting_y{
-            player.pos.y = starting_y
-            on_floor = true
-        }
+        player_update(&player, blocks)
 
         rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
 
+
         player_render(player)
-        rl.DrawRectangleRec({rect.x - 150.0, rect.y + rect.height - jump_height, 50.0, jump_height}, rl.WHITE)
+
+        for block in blocks{
+            rl.DrawRectangleRec(block, rl.WHITE)
+        }
 
         rl.EndDrawing()
     }
+    delete(blocks)
 
     rl.CloseWindow()
 
