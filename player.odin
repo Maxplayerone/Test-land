@@ -30,34 +30,60 @@ player_rect :: proc(p: Player) -> rl.Rectangle{
 player_update :: proc(p: ^Player, blocks: [dynamic]rl.Rectangle, block_colours: ^[dynamic]rl.Color){
     dt := rl.GetFrameTime()
 
+    for &color in block_colours{
+        color = rl.WHITE
+    }
+
     move: rl.Vector2
-    /*
     if rl.IsKeyDown(.D){
         move.x = p.speed.x * dt
     }
     if rl.IsKeyDown(.A){
         move.x = -p.speed.x * dt
     }
+        /*
     if rl.IsKeyPressed(.SPACE){
         p.speed.y = p.start_vert_speed
     }
     move.y = -(0.5 * p.g * dt * dt + p.speed.y * dt)
     */
+    /*
     if rl.IsMouseButtonDown(.LEFT){
-        p.pos += rl.GetMouseDelta()
+        move = rl.GetMouseDelta()
     }
+        */
 
-    colliding := false
     for block, i in blocks{
-        //if colliding do break
-        if rl.CheckCollisionRecs(get_rect(p.pos, p.size), block){
-            block_colours[i] = rl.RED
-        }
-        else{
-            block_colours[i] = rl.WHITE
+        
+        //bottom, top, right, left 
+        collision: [4]bool
+        for dir in 0..<4{
+            if dir == 0 && move.y < 0.0 do continue
+            if dir == 1 && move.y > 0.0 do continue
+            if dir == 2 && move.x < 0.0 do continue
+            if dir == 3 && move.x > 0.0 do continue
+
+            if rl.CheckCollisionPointRec(p.pos + move + p.collission_points[dir*2], block) || rl.CheckCollisionPointRec(p.pos + move + p.collission_points[2*dir+1], block){
+                collision[dir] = true
+            }
         }
 
+        /*
+        if collision[0]{
+            move.y = block.y + block.height - (p.pos.y + move.y)
+        }
+        if collision[1]{
+            move.y = -(p.pos.y + move.y + p.size - block.y)
+        }
+            */
+        if collision[2]{
+            move.x = block.x + block.width - (p.pos.x + move.x)
+        }
+        if collision[3]{
+            move.x = -(p.pos.x + move.x + p.size - block.x)
+        }
     }
+    p.pos += move
 
     //getting the angle between player and mouse
     mouse_pos := rl.GetMousePosition()

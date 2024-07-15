@@ -1,0 +1,3 @@
+HIGH LEVEL
+-get info on which axis we are colliding on (X or Y)
+-find a vector that doesn't collide on the given axis
