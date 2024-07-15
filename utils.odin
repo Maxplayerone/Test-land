@@ -55,3 +55,13 @@ ceiling_collission :: proc(ceilings: [dynamic]rl.Rectangle, rect: rl.Rectangle) 
     }
     return is_colliding
 }
+
+generate_collission_points :: proc(size: f32) -> [8]rl.Vector2{
+    points := [8]rl.Vector2{
+        {size * 0.25, 0.0}, {size * 0.75, 0.0},//head
+        {size * 0.25, size}, {size * 0.75, size}, //feet
+        {0.0, size * 0.25}, {0.0, size * 0.75}, //left
+        {size, size * 0.25}, {size, size * 0.75} //right
+    }
+    return points
+}
