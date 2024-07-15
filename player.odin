@@ -41,24 +41,10 @@ player_update :: proc(p: ^Player, blocks: [dynamic]rl.Rectangle, block_colours: 
     if rl.IsKeyDown(.A){
         move.x = -p.speed.x * dt
     }
-    /*
-    if rl.IsKeyDown(.W){
-        move.y = -p.speed.x * dt
-    }
-    if rl.IsKeyDown(.S){
-        move.y = p.speed.x * dt
-    }
-    */
     if rl.IsKeyPressed(.SPACE){
         p.speed.y = p.start_vert_speed
     }
     move.y = -(0.5 * p.g * dt * dt + p.speed.y * dt)
-    /*
-    if rl.IsMouseButtonDown(.LEFT){
-        move = rl.GetMouseDelta()
-    }
-        */
-
 
     for block in blocks{
         if rl.CheckCollisionRecs(get_rect({p.pos.x + move.x, p.pos.y}, p.size), block){
@@ -70,7 +56,13 @@ player_update :: proc(p: ^Player, blocks: [dynamic]rl.Rectangle, block_colours: 
             }
         }
         if rl.CheckCollisionRecs(get_rect({p.pos.x, p.pos.y + move.y}, p.size), block){
-            move.y = 0
+            if move.y > 0.0{
+                move.y = block.y - p.size - p.pos.y
+            }
+            if move.y < 0.0{
+                move.y = block.y + block.height - p.pos.y
+            }
+
             p.speed.y = 0
         }
     }
