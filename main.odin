@@ -37,8 +37,8 @@ main :: proc(){
     rect := get_rect(player.pos, player.size)
 
     blocks: [dynamic]rl.Rectangle
-    //append(&blocks, rl.Rectangle{0.0, Height - 100.0 + player.size, Width, 100.0})
-    //append(&blocks, rl.Rectangle{200.0, 400.0, 100.0, 300.0})
+    append(&blocks, rl.Rectangle{0.0, Height - 100.0 + player.size, Width, 100.0})
+    append(&blocks, rl.Rectangle{200.0, 400.0, 100.0, 300.0})
     append(&blocks, rl.Rectangle{400.0, 200.0, 150.0, 50.0})
     block_colours: [dynamic]rl.Color
     for _ in 0..<len(blocks){
