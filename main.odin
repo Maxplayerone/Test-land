@@ -20,7 +20,8 @@ main :: proc(){
     player := Player{}
     player.size = 40.0
     //player.pos = rl.Vector2{Width / 2 - player.size / 2, Height / 2 - player.size / 2 + 100.0}
-    player.pos = rl.Vector2{400.0, 200.0}
+    //player.pos = rl.Vector2{200.0, 200.0}
+    player.pos = rl.Vector2{360.0, 200.0}
     player.color = rl.Color{125, 255, 207, 255}
     player.speed.x = 400.0
 
@@ -38,7 +39,7 @@ main :: proc(){
     blocks: [dynamic]rl.Rectangle
     //append(&blocks, rl.Rectangle{0.0, Height - 100.0 + player.size, Width, 100.0})
     //append(&blocks, rl.Rectangle{200.0, 400.0, 100.0, 300.0})
-    append(&blocks, rl.Rectangle{700.0, 200.0, 150.0, 50.0})
+    append(&blocks, rl.Rectangle{400.0, 200.0, 150.0, 50.0})
     block_colours: [dynamic]rl.Color
     for _ in 0..<len(blocks){
         append(&block_colours, rl.WHITE)
@@ -54,10 +55,10 @@ main :: proc(){
         rl.ClearBackground(rl.BLACK)
 
         if rl.IsKeyPressed(.ONE){
-            player.pos.x = 100
+            player.pos.x = 200
         }
         if rl.IsKeyPressed(.TWO){
-            player.pos.x = 900
+            player.pos.x = 700
         }
 
         for block, i in blocks{
@@ -68,6 +69,8 @@ main :: proc(){
         for p in player.collission_points{
             rl.DrawCircleV(p + player.pos, 2.0, rl.ORANGE)
         }
+
+        rl.DrawFPS(10, 10)
 
         rl.EndDrawing()
     }

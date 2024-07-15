@@ -41,6 +41,12 @@ player_update :: proc(p: ^Player, blocks: [dynamic]rl.Rectangle, block_colours: 
     if rl.IsKeyDown(.A){
         move.x = -p.speed.x * dt
     }
+    if rl.IsKeyDown(.W){
+        move.y = -p.speed.x * dt
+    }
+    if rl.IsKeyDown(.S){
+        move.y = p.speed.x * dt
+    }
         /*
     if rl.IsKeyPressed(.SPACE){
         p.speed.y = p.start_vert_speed
@@ -54,7 +60,6 @@ player_update :: proc(p: ^Player, blocks: [dynamic]rl.Rectangle, block_colours: 
         */
 
     for block, i in blocks{
-        
         //bottom, top, right, left 
         collision: [4]bool
         for dir in 0..<4{
@@ -63,7 +68,7 @@ player_update :: proc(p: ^Player, blocks: [dynamic]rl.Rectangle, block_colours: 
             if dir == 2 && move.x < 0.0 do continue
             if dir == 3 && move.x > 0.0 do continue
 
-            if rl.CheckCollisionPointRec(p.pos + move + p.collission_points[dir*2], block) || rl.CheckCollisionPointRec(p.pos + move + p.collission_points[2*dir+1], block){
+            if rl.CheckCollisionPointRec(p.pos + move + p.collission_points[dir*2], block) && rl.CheckCollisionPointRec(p.pos + move + p.collission_points[2*dir+1], block){
                 collision[dir] = true
             }
         }
@@ -75,13 +80,32 @@ player_update :: proc(p: ^Player, blocks: [dynamic]rl.Rectangle, block_colours: 
         if collision[1]{
             move.y = -(p.pos.y + move.y + p.size - block.y)
         }
-            */
+        */
         if collision[2]{
-            move.x = block.x + block.width - (p.pos.x + move.x)
+            fmt.println("colliding on the right")
+            //move.x = block.x - p.size - p.pos.x
         }
         if collision[3]{
-            move.x = -(p.pos.x + move.x + p.size - block.x)
+            fmt.println("colliding on the left")
+            move.x = block.x - p.size - p.pos.x - 1
         }
+            /*
+        if rl.CheckCollisionRecs(get_rect(p.pos + move, p.size), block){
+            if move.y < 0.0{
+                move.y = block.y + block.height - p.pos.y
+            }
+            if move.y > 0.0{
+                move.y = block.y - p.size - p.pos.y
+            }
+
+            if move.x < 0.0{
+                move.x = block.x + block.width - p.pos.x
+            }
+            if move.x > 0.0{
+                move.x = block.x - p.size - p.pos.x
+            }
+        }
+            */
     }
     p.pos += move
 
