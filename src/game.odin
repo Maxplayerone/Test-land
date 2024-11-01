@@ -16,8 +16,11 @@ GridHeight :: Height / CellSize
 GridSize :: GridWidth * GridHeight
 
 Game_Memory :: struct {
-	pos:    rl.Vector2,
-	camera: rl.Camera2D,
+	pos:          rl.Vector2,
+	camera:       rl.Camera2D,
+	start_target: rl.Vector2,
+	bg:           rl.Texture2D,
+	x, y:         int,
 }
 
 g_mem: ^Game_Memory
@@ -36,7 +39,13 @@ game_init :: proc() {
 
 	g_mem^ = Game_Memory {
 		pos = {CellSize * 20, CellSize * 20},
-		camera = rl.Camera2D{zoom = 1.0, target = {0.0, 0.0}, offset = {Width / 2, Height / 2}},
+		camera = rl.Camera2D {
+			zoom = 1.0,
+			//target = {Width / 2, Height / 2},
+			//offset = {Width / 2, Height / 2},
+		},
+		start_target = {Width / 2, Height / 2},
+		bg = rl.LoadTexture("res/bg.png"),
 	}
 
 	game_hot_reloaded(g_mem)
@@ -75,59 +84,130 @@ clamp_position :: proc(pos: ^rl.Vector2, value: f32) {
 	pos.y = f32(int(pos.y))
 }
 
+get_camera_offset :: proc(camera: rl.Camera2D, start_target: rl.Vector2) -> rl.Vector2 {
+	return camera.target - start_target
+}
+
+camera_moved_cells_offset :: proc(
+	camera: rl.Camera2D,
+	cell_size: f32,
+	start_target := rl.Vector2{0.0, 0.0},
+) -> (
+	int,
+	int,
+) {
+	x := int(camera.target.x / cell_size)
+	y := int(camera.target.y / cell_size)
+	return x, y
+}
+
 @(export)
 game_update :: proc() -> bool {
 	dt := rl.GetFrameTime()
 	speed: f32 = 700
-	input: rl.Vector2
+	//input: rl.Vector2
 
+	/*
 	if rl.IsKeyDown(.W) {
-		input.y -= speed * dt
+		g_mem.camera.offset.y -= speed * dt
 	}
 	if rl.IsKeyDown(.S) {
-		input.y += speed * dt
+		g_mem.camera.offset.y += speed * dt
 	}
 	if rl.IsKeyDown(.A) {
-		input.x -= speed * dt
+		g_mem.camera.offset.x -= speed * dt
 	}
 	if rl.IsKeyDown(.D) {
-		input.x += speed * dt
+		g_mem.camera.offset.x += speed * dt
 	}
-	clamp_position(&input, CellSize)
-	g_mem.pos += input
+	*/
+	//clamp_position(&input, CellSize)
+	//g_mem.pos += input
 
-	if rl.IsKeyDown(.I) {
+	if rl.IsKeyDown(.W) {
 		g_mem.camera.target.y -= speed * dt
 	}
-	if rl.IsKeyDown(.K) {
+	if rl.IsKeyDown(.S) {
 		g_mem.camera.target.y += speed * dt
 	}
-	if rl.IsKeyDown(.J) {
+	if rl.IsKeyDown(.A) {
 		g_mem.camera.target.x -= speed * dt
 	}
-	if rl.IsKeyDown(.L) {
+	if rl.IsKeyDown(.D) {
 		g_mem.camera.target.x += speed * dt
+	}
+
+	/*
+	rl.BeginDrawing()
+	rl.ClearBackground(rl.BLACK)
+
+	rl.DrawRectangleRec({g_mem.pos.x, g_mem.pos.y, CellSize * 5, CellSize * 5}, rl.ORANGE)
+
+	rl.BeginMode2D(g_mem.camera)
+
+	line_color := rl.Color{255, 255, 255, 125}
+	//start_offset := get_camera_offset(g_mem.camera, g_mem.start_target)
+	start_offset: [2]f32 = {0.0, 0.0}
+	for i in 0 ..< GridWidth {
+		rl.DrawLineEx(
+			{start_offset.x + CellSize * f32(i), start_offset.y},
+			{start_offset.x + CellSize * f32(i), start_offset.y + Height},
+			1.0,
+			line_color,
+		)
+	}
+	for i in 0 ..< GridHeight {
+		rl.DrawLineEx(
+			{start_offset.x, start_offset.y + CellSize * f32(i)},
+			{start_offset.x + Width, start_offset.y + CellSize * f32(i)},
+			1.0,
+			line_color,
+		)
+	}
+
+	rl.EndMode2D()
+
+	rl.EndDrawing()
+	*/
+
+	//x, y := camera_moved_cells_offset(g_mem.camera, CellSize)
+	if rl.IsKeyPressed(.RIGHT) {
+		g_mem.x += CellSize
+	}
+	if rl.IsKeyPressed(.LEFT) {
+		g_mem.x -= CellSize
 	}
 
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.BLACK)
 
-	rl.DrawRectangleRec({g_mem.pos.x, g_mem.pos.y, CellSize, CellSize}, rl.ORANGE)
-	//rl.DrawRectangleRec({20.0, 100.0, 40.0, 40.0}, rl.RED)
-	//rl.DrawRectangleRec({20.0, 0.0, 40.0, 40.0}, rl.BLUE)
+	rl.BeginMode2D(g_mem.camera)
 
-
-	//rl.BeginMode2D(ui_camera())
-	//rl.DrawRectangleRec({32.0, 32.0, 64.0, 64.0}, rl.WHITE)
-	//rl.EndMode2D()
-
+	//start_offset := get_camera_offset(g_mem.camera, {0.0, 0.0})
 	line_color := rl.Color{255, 255, 255, 125}
-	for i in 0 ..< GridWidth {
-		rl.DrawLineEx({CellSize * f32(i), 0.0}, {CellSize * f32(i), Height}, 1.0, line_color)
+	x, y := camera_moved_cells_offset(g_mem.camera, CellSize)
+	for i in x ..< GridWidth + x {
+		rl.DrawLineEx(
+			{CellSize * f32(i), f32(y) * CellSize},
+			{CellSize * f32(i), f32(y) * CellSize + Height},
+			1.0,
+			line_color,
+		)
 	}
-	for i in 0 ..< GridHeight {
-		rl.DrawLineEx({0.0, CellSize * f32(i)}, {Width, CellSize * f32(i)}, 1.0, line_color)
+	//horizontal lines
+	for i in y ..< GridHeight + y {
+		rl.DrawLineEx(
+			{f32(x) * CellSize, CellSize * f32(i)},
+			{f32(x) * CellSize + Width, CellSize * f32(i)},
+			1.0,
+			line_color,
+		)
 	}
+	rl.DrawRectangleRec({Width / 2 - 50, Height / 2 - 50, 100, 100}, rl.WHITE)
+
+	rl.DrawRectangleRec({Width, Height, 40, 40}, rl.ORANGE)
+
+	rl.EndMode2D()
 
 	rl.EndDrawing()
 
